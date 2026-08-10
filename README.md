@@ -1,58 +1,88 @@
 # Azure Changelog
 
-A clean, always up-to-date feed of Microsoft Azure service updates — summarized, with key points pulled out, tagged by category/status, searchable, and refreshed automatically every 6 hours. No backend, no database, no build framework: static HTML/CSS/JS + a small data-fetching script, deployed to GitHub Pages via GitHub Actions.
+A clean, always-current feed of Microsoft Azure service updates — every entry gets a short summary and key points pulled out, tagged by category and status, searchable and filterable. No backend, no database, no AI, no API keys. Just a static site that refreshes itself.
 
-**How it stays current:** a scheduled GitHub Actions workflow calls Microsoft's public Azure Updates API, turns each new/changed entry into a clean summary + key-point bullets (rule-based text extraction — no AI API key required), commits the data, and redeploys the site. It also runs on every push to `main` and can be triggered manually.
+**Live site:** [daryakerman.github.io/azure-changelog](https://daryakerman.github.io/azure-changelog/)
 
-## Project layout
+## Why this exists
+
+Azure ships changes constantly — new features, GA announcements, previews, retirements — and the official updates page makes it hard to quickly see what's new and what actually matters to you. This project pulls the same official data and presents it as a fast, readable, filterable feed: search by service, filter by status, and get the gist of each update in a few bullet points instead of a wall of text.
+
+## Features
+
+- 🔄 **Always current** — refreshes automatically every 6 hours, no manual steps
+- 📝 **Summary + key points** for every update, extracted straight from Microsoft's own text
+- 🔍 **Search and filtering** by service, category, and status (Generally Available / Public Preview / In Development / Retirement)
+- 🧠 **No AI, no API keys, no cost** — summaries are built with plain, transparent text-processing logic, not a language model
+- 🌐 **Fully open source** — MIT licensed, free to use, fork, or self-host
+- ⚡ **Static and lightweight** — plain HTML/CSS/JS, no framework, loads fast
+
+## How it works
+
+A scheduled GitHub Actions workflow:
+
+1. Calls Microsoft's public Azure Updates API directly (no key required).
+2. Converts each new or changed entry into a clean summary, bullet key points, a normalized status badge, and category/product tags.
+3. Commits the updated data back to the repo.
+4. Redeploys the static site to GitHub Pages.
+
+It also runs on every push to `main`, and can be triggered manually from the Actions tab.
+
+## Tech stack
+
+- **Frontend:** plain HTML, CSS, and JavaScript — no framework, no build step
+- **Data ingestion:** a small, dependency-free Node.js script (`scripts/fetch-updates.js`)
+- **Hosting & automation:** GitHub Pages + GitHub Actions
+
+## Project structure
 
 ```
-scripts/fetch-updates.js   # pulls updates from Azure's API, writes site/data/*.json (zero dependencies)
-scripts/serve.js           # tiny local static server for previewing site/ (zero dependencies)
+scripts/fetch-updates.js   # pulls updates from Azure's API, writes site/data/*.json
+scripts/serve.js           # tiny local static server for previewing site/
 site/                      # the deployed site: index.html, styles.css, app.js, data/
 .github/workflows/update.yml  # scheduled fetch -> commit -> deploy to GitHub Pages
 ```
 
-## One-time setup (GitHub)
+## Running your own copy
 
-1. Create a new **empty** GitHub repository named `azure-changelog` under your account (`DaryAkerman`) — don't initialize it with a README/license, this folder already has one.
-2. From this folder:
-   ```sh
-   git remote add origin https://github.com/DaryAkerman/azure-changelog.git
-   git push -u origin main
-   ```
-3. In the repo on GitHub: **Settings → Actions → General → Workflow permissions** → select **"Read and write permissions"**, then Save.
-   (Needed so the scheduled workflow can commit the refreshed data back to the repo.)
-4. In the repo on GitHub: **Settings → Pages → Build and deployment → Source** → select **"GitHub Actions"**.
-5. Go to the **Actions** tab and run the **"Update Azure Changelog"** workflow once manually (`Run workflow`), or just wait — it also runs automatically on the push from step 2.
-   - The **first** run has no existing data file, so it automatically does a deep backfill (a few hundred to ~2000 historical entries) instead of just the last few. This may take a bit longer than later runs.
-6. Once it finishes, your site is live at `https://DaryAkerman.github.io/azure-changelog/`.
+1. Fork or clone this repository.
+2. In your repo's settings: **Settings → Actions → General → Workflow permissions** → "Read and write permissions" (lets the scheduled workflow commit refreshed data).
+3. **Settings → Pages → Build and deployment → Source** → "GitHub Actions".
+4. Push to `main`, or run the **"Update Azure Changelog"** workflow manually from the Actions tab.
+   - The first run has no existing data yet, so it automatically does a deep backfill (up to ~2000 historical entries) instead of just the latest ones — it takes a little longer than later runs.
+5. Once it finishes, your site is live at `https://<your-username>.github.io/<repo-name>/`.
 
-After that, it updates itself — no further action needed. It checks for new/changed Azure updates every 6 hours (`.github/workflows/update.yml`); edit the cron expression there to change the cadence.
+From there it maintains itself. Edit the cron expression in `.github/workflows/update.yml` to change the refresh cadence (defaults to every 6 hours).
 
-## Local preview
+## Local development
 
-Requires [Node.js](https://nodejs.org) 18+ (not currently installed on this machine — install it if you want to run these locally; everything above works via GitHub Actions regardless).
+Requires [Node.js](https://nodejs.org) 18+.
 
 ```sh
 npm run backfill   # first time: pull a deep history of updates into site/data/
 npm run serve      # serve site/ at http://localhost:4321
 ```
 
-Later, `npm run fetch` does a lighter incremental pull (same thing the scheduled workflow runs).
+`npm run fetch` does a lighter incremental pull — the same thing the scheduled workflow runs.
 
 ## How summaries are generated
 
-`scripts/fetch-updates.js` has no AI/API-key dependency by design. For each Azure update it:
+`scripts/fetch-updates.js` has no AI or API-key dependency, by design. For each Azure update it:
 
 - Strips HTML from Microsoft's own update description and decodes entities.
-- Uses the first sentence(s) as the **summary** (a second short sentence is folded in if the first is very short).
+- Uses the first sentence(s) as the **summary** (a short second sentence gets folded in if the first is very brief).
 - Pulls out `<li>` bullet points as **key points** when the source has a list; otherwise falls back to the next few sentences.
 - Grabs the first outbound link in the description as a **"Learn more"** link.
 - Normalizes `status` into a badge: Generally Available / Public Preview / In Development / Retirement.
 
-If you'd rather have an LLM write punchier summaries, that's a natural upgrade: swap `buildSummary`/`extractKeyPoints` in `scripts/fetch-updates.js` for a call to the Claude API, gated behind an `ANTHROPIC_API_KEY` repo secret.
+## Contributing
 
-## Data source
+Issues and pull requests are welcome — better summary heuristics, design tweaks, new filters, whatever's useful. It's a small, dependency-free codebase, so it's easy to jump into.
 
-[Microsoft's public Azure Updates](https://azure.microsoft.com/en-us/updates) API (`https://www.microsoft.com/releasecommunications/api/v2/azure`), unauthenticated, no API key required. This project is not affiliated with or endorsed by Microsoft.
+## Data source & disclaimer
+
+Data comes from Microsoft's public [Azure Updates](https://azure.microsoft.com/en-us/updates) API (`https://www.microsoft.com/releasecommunications/api/v2/azure`), unauthenticated and free to query. This project is an independent, community-built tool and is **not affiliated with or endorsed by Microsoft**.
+
+## License
+
+[MIT](LICENSE)
