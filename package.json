@@ -1,0 +1,16 @@
+{
+  "name": "azure-changelog",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "An always-up-to-date, nicely summarized feed of Microsoft Azure service updates.",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "fetch": "node scripts/fetch-updates.js",
+    "backfill": "node scripts/fetch-updates.js --backfill",
+    "serve": "node scripts/serve.js"
+  },
+  "license": "MIT"
+}
