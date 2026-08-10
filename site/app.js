@@ -30,7 +30,9 @@
     themeToggle: document.getElementById("theme-toggle"),
   };
 
-  const dateFmt = new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric", year: "numeric" });
+  // Pinned to en-US so dates read consistently regardless of the visitor's
+  // browser locale, matching the site's English copy.
+  const dateFmt = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric" });
 
   // ---------- theme ----------
 
